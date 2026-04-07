@@ -45,7 +45,7 @@ class HomeScreen extends StatelessWidget {
                               style: AppTheme.displayLarge,
                               children: [
                                 TextSpan(
-                                  text: 'Babe 👋',
+                                  text: 'Alu 👋',
                                   style: AppTheme.displayLarge.copyWith(
                                     color: AppTheme.primary,
                                   ),
