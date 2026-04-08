@@ -7,6 +7,7 @@ import '../../providers/notes_provider.dart';
 import '../../providers/flashcard_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/custom_button.dart';
+import '../../services/gemini_service.dart';
 
 class UploadScreen extends StatefulWidget {
   const UploadScreen({super.key});
@@ -49,7 +50,7 @@ class _UploadScreenState extends State<UploadScreen>
   }
 
   Future<void> _pickFile() async {
-    final result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf', 'txt'],
       withData: true, // Important: get bytes for web support
@@ -260,9 +261,10 @@ class _UploadScreenState extends State<UploadScreen>
             const SizedBox(height: 28),
 
             // API key hint
-            _ApiKeyHint(),
-
-            const SizedBox(height: 24),
+            if (!GeminiService.hasApiKey) ...[
+              _ApiKeyHint(),
+              const SizedBox(height: 24),
+            ],
 
             // Recent uploads
             Text('Recent Uploads', style: AppTheme.headlineSmall),

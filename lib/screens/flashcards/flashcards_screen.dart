@@ -80,7 +80,7 @@ class FlashcardsScreen extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.swipe_rounded,
+                      const Icon(Icons.swipe_rounded,
                           size: 14, color: AppTheme.textHint),
                       const SizedBox(width: 6),
                       Text('Swipe left/right to navigate',
