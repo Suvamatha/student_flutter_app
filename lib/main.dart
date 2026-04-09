@@ -7,6 +7,7 @@ import 'providers/flashcard_provider.dart';
 import 'providers/pomodoro_provider.dart';
 import 'providers/notes_provider.dart';
 import 'providers/water_provider.dart';
+import 'providers/timetable_provider.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/upload/upload_screen.dart';
 import 'screens/notes/notes_screen.dart';
@@ -49,6 +50,7 @@ class StudyAIApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => PomodoroProvider()),
         ChangeNotifierProvider(create: (_) => NotesProvider()),
         ChangeNotifierProvider(create: (_) => WaterProvider()),
+        ChangeNotifierProvider(create: (_) => TimetableProvider()),
       ],
       child: MaterialApp(
         title: 'StudyAI',
@@ -82,14 +84,13 @@ class MainScaffold extends StatefulWidget {
 class MainScaffoldState extends State<MainScaffold> {
   int _currentIndex = 0;
 
-  // Tab order: Home, Upload, Notes, Flashcards, Tasks
-  // Pomodoro & Water accessible from home quick actions + nav push
-  static final List<Widget> _screens = [
-    const HomeScreen(),
-    const UploadScreen(),
+  // Tab order: Home, Notes, Flashcards, Tasks, Pomodoro(Focus)
+  late final List<Widget> _screens = [
+    HomeScreen(onTabChange: (index) => setState(() => _currentIndex = index)),
     const NotesScreen(),
     const FlashcardsScreen(),
     const TasksScreen(),
+    const PomodoroScreen(),
   ];
 
   void switchTab(int index) {

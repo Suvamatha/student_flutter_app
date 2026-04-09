@@ -7,7 +7,8 @@ import '../../theme/app_theme.dart';
 import '../../widgets/task_card.dart';
 
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+  final Function(int)? onTabChange;
+  const HomeScreen({super.key, this.onTabChange});
 
   String get _greeting {
     final hour = DateTime.now().hour;
@@ -117,21 +118,21 @@ class HomeScreen extends StatelessWidget {
                           title: 'Upload PDF',
                           subtitle: 'AI summary',
                           color: AppTheme.primary,
-                          onTap: () => _navigate(context, 1),
+                          onTap: () => Navigator.pushNamed(context, '/upload'),
                         ),
                         _QuickActionCard(
                           emoji: '🍅',
                           title: 'Pomodoro',
                           subtitle: 'Focus · 25 min',
                           color: AppTheme.secondary,
-                          onTap: () => _navigate(context, 4),
+                          onTap: () => onTabChange?.call(4),
                         ),
                         _QuickActionCard(
                           emoji: '🧠',
                           title: 'Flashcards',
                           subtitle: 'Review cards',
                           color: AppTheme.warning,
-                          onTap: () => _navigate(context, 2),
+                          onTap: () => onTabChange?.call(2),
                         ),
                         _QuickActionCard(
                           emoji: '📅',
@@ -156,7 +157,7 @@ class HomeScreen extends StatelessWidget {
                   children: [
                     Text("Today's Tasks", style: AppTheme.headlineSmall),
                     GestureDetector(
-                      onTap: () => _navigate(context, 3),
+                      onTap: () => onTabChange?.call(3),
                       child: Text(
                         'See all',
                         style: AppTheme.labelMedium
@@ -176,7 +177,7 @@ class HomeScreen extends StatelessWidget {
                   if (tasks.isEmpty) {
                     return SliverToBoxAdapter(
                       child: _EmptyTasks(
-                        onAdd: () => _navigate(context, 3),
+                        onAdd: () => onTabChange?.call(3),
                       ),
                     );
                   }
@@ -205,12 +206,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  void _navigate(BuildContext context, int index) {
-    const routes = ['/', '/upload', '/notes', '/flashcards', '/tasks'];
-    if (index < routes.length && index > 0) {
-      Navigator.pushNamed(context, routes[index]);
-    }
-  }
+  // _navigate was removed
 }
 
 class _HeroCard extends StatelessWidget {
