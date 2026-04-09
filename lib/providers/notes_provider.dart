@@ -42,7 +42,7 @@ class NotesProvider extends ChangeNotifier {
       _statusMessage = 'Extracting text...';
       notifyListeners();
 
-      final extractedText = PdfExtractor.extractText(fileBytes, fileName);
+      final extractedText = await PdfExtractor.extractText(fileBytes, fileName);
 
       if (extractedText.trim().length < 50) {
         throw Exception(

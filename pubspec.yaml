@@ -36,6 +36,7 @@ dependencies:
 
   # Lottie animations (optional)
   lottie: ^3.0.0
+  syncfusion_flutter_pdf: ^33.1.47
 
 dev_dependencies:
   flutter_test:

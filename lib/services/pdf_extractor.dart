@@ -1,25 +1,25 @@
-import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
+import 'package:syncfusion_flutter_pdf/pdf.dart';
 
 /// Extracts readable text from PDF bytes or plain text files.
 /// For web (Chrome), file_picker returns bytes directly.
 /// For mobile, it returns a file path we can read.
 class PdfExtractor {
   /// Extract text from raw file bytes.
-  /// Handles PDF (basic extraction) and plain text files.
-  static String extractText(Uint8List bytes, String fileName) {
+  /// Handles PDF (using syncfusion_flutter_pdf) and plain text files.
+  /// Runs extraction in a separate isolate to prevent UI freezing.
+  static Future<String> extractText(Uint8List bytes, String fileName) async {
     final ext = fileName.split('.').last.toLowerCase();
 
+    // Use Isolate / compute to prevent the UI from freezing
+    // especially important for large PDF files
     if (ext == 'txt') {
-      return _extractFromTxt(bytes);
+      return await compute(_extractFromTxt, bytes);
     } else if (ext == 'pdf') {
-      return _extractFromPdf(bytes);
+      return await compute(_extractFromPdf, bytes);
     } else {
       // Fallback: try treating as UTF-8 text
-      try {
-        return String.fromCharCodes(bytes);
-      } catch (_) {
-        return '';
-      }
+      return await compute(_extractFromTxtFallback, bytes);
     }
   }
 
@@ -32,97 +32,32 @@ class PdfExtractor {
     }
   }
 
-  /// Basic PDF text extraction.
-  /// Finds text between BT (Begin Text) and ET (End Text) markers,
-  /// and extracts content from Tj and TJ PDF operators.
-  /// This handles most simple/unencrypted PDFs without a native plugin.
+  static String _extractFromTxtFallback(Uint8List bytes) {
+    try {
+      return String.fromCharCodes(bytes);
+    } catch (_) {
+      return '';
+    }
+  }
+
+  /// PDF text extraction using syncfusion_flutter_pdf
   static String _extractFromPdf(Uint8List bytes) {
     try {
-      // Try to decode the raw PDF as Latin-1 (PDFs use this internally)
-      final raw = String.fromCharCodes(bytes);
-
-      final buffer = StringBuffer();
-
-      // Strategy 1: Extract text between stream...endstream blocks
-      final streamRegex = RegExp(r'stream([\s\S]*?)endstream', multiLine: true);
-      for (final match in streamRegex.allMatches(raw)) {
-        final streamContent = match.group(1) ?? '';
-        buffer.write(_extractTextOps(streamContent));
-      }
-
-      // Strategy 2: Find parenthesised strings (PDF string objects)
-      if (buffer.isEmpty) {
-        final parenRegex = RegExp(r'\(([^)]{3,})\)');
-        for (final match in parenRegex.allMatches(raw)) {
-          final text = match.group(1) ?? '';
-          // Filter out binary/control chars
-          final cleaned = text.replaceAll(RegExp(r'[^\x20-\x7E\n\r\t]'), ' ').trim();
-          if (cleaned.length > 3 && _looksLikeText(cleaned)) {
-            buffer.write('$cleaned ');
-          }
-        }
-      }
-
-      final result = buffer.toString().trim();
-
+      final PdfDocument document = PdfDocument(inputBytes: bytes);
+      final String text = PdfTextExtractor(document).extractText();
+      document.dispose();
+      
+      final result = text.trim();
+      
       // If we got very little text, the PDF might be scanned/encrypted
-      if (result.length < 100) {
+      if (result.length < 50) {
         return _fallbackMessage();
       }
-
-      // Clean up excess whitespace
-      return result
-          .replaceAll(RegExp(r'\s{3,}'), ' ')
-          .replaceAll(RegExp(r'\n{3,}'), '\n\n')
-          .trim();
+      
+      return result;
     } catch (e) {
       return _fallbackMessage();
     }
-  }
-
-  /// Extracts text from PDF stream content using Tj/TJ operators
-  static String _extractTextOps(String stream) {
-    final buffer = StringBuffer();
-
-    // Match (text) Tj  — single string show
-    final tjRegex = RegExp(r'\(([^)]*)\)\s*Tj');
-    for (final match in tjRegex.allMatches(stream)) {
-      final text = _decodePdfString(match.group(1) ?? '');
-      if (text.isNotEmpty) buffer.write('$text ');
-    }
-
-    // Match [(text)(text)] TJ  — array show
-    final tjArrayRegex = RegExp(r'\[(.*?)\]\s*TJ', dotAll: true);
-    for (final match in tjArrayRegex.allMatches(stream)) {
-      final inner = match.group(1) ?? '';
-      final innerStrings = RegExp(r'\(([^)]*)\)').allMatches(inner);
-      for (final s in innerStrings) {
-        final text = _decodePdfString(s.group(1) ?? '');
-        if (text.isNotEmpty) buffer.write(text);
-      }
-      buffer.write(' ');
-    }
-
-    return buffer.toString();
-  }
-
-  /// Decode PDF escape sequences in strings
-  static String _decodePdfString(String s) {
-    return s
-        .replaceAll(r'\n', '\n')
-        .replaceAll(r'\r', '\r')
-        .replaceAll(r'\t', '\t')
-        .replaceAll(r'\(', '(')
-        .replaceAll(r'\)', ')')
-        .replaceAll(r'\\', '\\')
-        .replaceAll(RegExp(r'[^\x20-\x7E\n\r\t]'), '');
-  }
-
-  /// Simple heuristic: does this string look like English text?
-  static bool _looksLikeText(String s) {
-    // Must have some letters
-    final letters = s.replaceAll(RegExp(r'[^a-zA-Z]'), '');
-    return letters.length > s.length * 0.4;
   }
 
   static String _fallbackMessage() {
@@ -136,3 +71,4 @@ Please try copying and pasting the text content directly, or use a plain text (.
 ''';
   }
 }
+
