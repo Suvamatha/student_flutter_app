@@ -3,7 +3,6 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 import '../../providers/task_provider.dart';
-import '../../providers/pomodoro_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/task_card.dart';
 
@@ -45,7 +44,7 @@ class HomeScreen extends StatelessWidget {
                               style: AppTheme.displayLarge,
                               children: [
                                 TextSpan(
-                                  text: 'Alu 👋',
+                                  text: 'Babe 👋',
                                   style: AppTheme.displayLarge.copyWith(
                                     color: AppTheme.primary,
                                   ),
@@ -395,7 +394,7 @@ class _EmptyTasks extends StatelessWidget {
       decoration: AppTheme.cardDecoration,
       child: Column(
         children: [
-          Text('🎉', style: const TextStyle(fontSize: 32)),
+          const Text('🎉', style: TextStyle(fontSize: 32)),
           const SizedBox(height: 8),
           Text('No tasks today!',
               style: AppTheme.titleMedium),
