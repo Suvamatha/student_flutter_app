@@ -35,53 +35,14 @@ class TimetableProvider extends ChangeNotifier {
           final list = (value as List).map((i) => ScheduleBlockModel.fromJson(i as Map<String, dynamic>)).toList();
           return MapEntry(key, list);
         });
-      } else {
-        _addDummyDataIfEmpty();
       }
     } catch (_) {
-        _addDummyDataIfEmpty();
     }
     _isLoading = false;
     notifyListeners();
   }
 
-  void _addDummyDataIfEmpty() {
-    if (_subjects.isNotEmpty) return;
-    
-    final s1 = SubjectModel(id: 'math', name: 'Mathematics', color: AppTheme.subjectMath, hoursPerWeek: 6);
-    final s2 = SubjectModel(id: 'bio', name: 'Biology', color: AppTheme.subjectBiology, hoursPerWeek: 4);
-    final s3 = SubjectModel(id: 'phys', name: 'Physics', color: AppTheme.subjectPhysics, hoursPerWeek: 5);
-    final s4 = SubjectModel(id: 'chem', name: 'Chemistry', color: AppTheme.subjectChemistry, hoursPerWeek: 3);
-    
-    _subjects = [s1, s2, s3, s4];
-    
-    _schedule = {
-      'Monday': [
-        ScheduleBlockModel(id: 'm1', subjectId: 'math', time: '8:00 – 10:00 AM', durationMinutes: 120),
-        ScheduleBlockModel(id: 'm2', subjectId: 'bio', time: '11:00 AM – 12:00 PM', durationMinutes: 60),
-        ScheduleBlockModel(id: 'm3', subjectId: 'phys', time: '2:00 – 4:00 PM', durationMinutes: 120),
-      ],
-      'Tuesday': [
-        ScheduleBlockModel(id: 't1', subjectId: 'bio', time: '9:00 – 11:00 AM', durationMinutes: 120),
-        ScheduleBlockModel(id: 't2', subjectId: 'math', time: '1:00 – 2:00 PM', durationMinutes: 60),
-      ],
-      'Wednesday': [
-        ScheduleBlockModel(id: 'w1', subjectId: 'phys', time: '8:00 – 9:30 AM', durationMinutes: 90),
-        ScheduleBlockModel(id: 'w2', subjectId: 'math', time: '11:00 AM – 1:00 PM', durationMinutes: 120),
-        ScheduleBlockModel(id: 'w3', subjectId: 'chem', time: '3:00 – 4:30 PM', durationMinutes: 90),
-      ],
-      'Thursday': [
-        ScheduleBlockModel(id: 'th1', subjectId: 'bio', time: '8:00 – 9:00 AM', durationMinutes: 60),
-        ScheduleBlockModel(id: 'th2', subjectId: 'phys', time: '10:00 – 11:30 AM', durationMinutes: 90),
-        ScheduleBlockModel(id: 'th3', subjectId: 'chem', time: '1:00 – 2:00 PM', durationMinutes: 60),
-      ],
-      'Friday': [
-        ScheduleBlockModel(id: 'f1', subjectId: 'math', time: '9:00 – 10:00 AM', durationMinutes: 60),
-        ScheduleBlockModel(id: 'f2', subjectId: 'bio', time: '11:00 AM – 12:00 PM', durationMinutes: 60),
-      ],
-    };
-    _saveData();
-  }
+
 
   Future<void> _saveData() async {
     try {

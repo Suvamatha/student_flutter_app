@@ -18,9 +18,7 @@ class FlashcardProvider extends ChangeNotifier {
   double get progress =>
       _flashcards.isEmpty ? 0 : (_currentIndex + 1) / _flashcards.length;
 
-  FlashcardProvider() {
-    _flashcards = MockFlashcards.biologySample;
-  }
+  FlashcardProvider();
 
   /// Load a fresh set of flashcards (called after Gemini generates them)
   void loadFlashcards(List<FlashcardModel> cards) {

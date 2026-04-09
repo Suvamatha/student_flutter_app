@@ -40,56 +40,9 @@ class TaskProvider extends ChangeNotifier {
 
   TaskProvider() {
     _loadTasks();
-    _addSampleTasks();
   }
 
-  void _addSampleTasks() {
-    if (_tasks.isNotEmpty) return;
-    final now = DateTime.now();
-    _tasks = [
-      TaskModel(
-        id: 'sample_1',
-        title: 'Read Chapter 5 – Biology',
-        subject: TaskSubject.biology,
-        dueDate: now,
-        dueTime: const TimeOfDay(hour: 9, minute: 0),
-        isCompleted: true,
-        priority: TaskPriority.high,
-      ),
-      TaskModel(
-        id: 'sample_2',
-        title: 'Submit Math Assignment',
-        subject: TaskSubject.math,
-        dueDate: now,
-        dueTime: const TimeOfDay(hour: 14, minute: 0),
-        priority: TaskPriority.high,
-      ),
-      TaskModel(
-        id: 'sample_3',
-        title: 'Review Physics notes',
-        subject: TaskSubject.physics,
-        dueDate: now,
-        dueTime: const TimeOfDay(hour: 17, minute: 30),
-        priority: TaskPriority.medium,
-      ),
-      TaskModel(
-        id: 'sample_4',
-        title: 'Prepare presentation slides',
-        subject: TaskSubject.english,
-        dueDate: now.add(const Duration(days: 1)),
-        dueTime: const TimeOfDay(hour: 10, minute: 0),
-        priority: TaskPriority.medium,
-      ),
-      TaskModel(
-        id: 'sample_5',
-        title: 'Study for Chemistry quiz',
-        subject: TaskSubject.chemistry,
-        dueDate: now.add(const Duration(days: 2)),
-        dueTime: const TimeOfDay(hour: 9, minute: 0),
-        priority: TaskPriority.high,
-      ),
-    ];
-  }
+
 
   Future<void> _loadTasks() async {
     _isLoading = true;

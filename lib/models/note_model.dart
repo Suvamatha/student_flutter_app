@@ -80,26 +80,3 @@ class NoteModel {
   static NoteModel fromJsonString(String s) =>
       NoteModel.fromJson(jsonDecode(s));
 }
-
-// Mock data
-class MockNotes {
-  static NoteModel get biologySample => NoteModel(
-        id: 'note_1',
-        title: 'Cell Biology: Structure and Function',
-        summary:
-            'This chapter explores the fundamental unit of life — the cell. It covers prokaryotic and eukaryotic structures, the role of organelles in cellular metabolism, and how the cell membrane regulates transport. Emphasis is placed on mitochondria as the site of ATP production and the nucleus as the control centre of gene expression.',
-        keyPoints: [
-          'Eukaryotic cells contain membrane-bound organelles; prokaryotes do not',
-          'The mitochondria produces ATP through cellular respiration (Krebs cycle + ETC)',
-          'Cell membranes are semi-permeable phospholipid bilayers',
-          'The nucleus contains DNA and directs protein synthesis via mRNA',
-          'Ribosomes are the site of translation — found free or on rough ER',
-          'The Golgi apparatus packages and exports proteins',
-          'Lysosomes contain digestive enzymes for cellular waste processing',
-        ],
-        sourceFile: 'Biology_Chapter5.pdf',
-        pageCount: 18,
-        estimatedReadMinutes: 12,
-        flashcardCount: 6,
-      );
-}

@@ -22,11 +22,7 @@ class NotesProvider extends ChangeNotifier {
   List<NoteModel> get bookmarkedNotes =>
       _allNotes.where((n) => n.isBookmarked).toList();
 
-  NotesProvider() {
-    _allNotes = [MockNotes.biologySample];
-    _currentNote = _allNotes.first;
-    _currentFlashcards = MockFlashcards.biologySample;
-  }
+  NotesProvider();
 
   Future<void> generateFromBytes({
     required Uint8List fileBytes,
@@ -95,11 +91,11 @@ class NotesProvider extends ChangeNotifier {
         _currentFlashcards = result.flashcards;
         _allNotes.insert(0, result.note);
       } else {
-        await Future.delayed(const Duration(seconds: 1));
-        final note = MockNotes.biologySample.copyWith(sourceFile: fileName);
-        _currentNote = note;
-        _currentFlashcards = MockFlashcards.biologySample;
-        _allNotes.insert(0, note);
+        _isLoading = false;
+        _statusMessage = '';
+        _error = 'Content is empty.';
+        notifyListeners();
+        return;
       }
     } catch (e) {
       _error = e.toString().replaceFirst('Exception: ', '');
