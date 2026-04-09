@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'services/hive_service.dart';
+import 'services/notification_service.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'theme/app_theme.dart';
@@ -18,8 +21,12 @@ import 'screens/pomodoro/pomodoro_screen.dart';
 import 'screens/water/water_screen.dart';
 import 'widgets/bottom_nav.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await HiveService().init();
+  await NotificationService().init();
+  await NotificationService().rescheduleAll();
 
   // Lock to portrait orientation
   SystemChrome.setPreferredOrientations([

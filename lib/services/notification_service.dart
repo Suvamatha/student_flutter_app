@@ -1,0 +1,185 @@
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/data/latest_all.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
+import 'package:flutter/material.dart' show TimeOfDay;
+import 'package:flutter/foundation.dart' show kIsWeb;
+import '../models/task_model.dart';
+import '../models/timetable_model.dart';
+import 'hive_service.dart';
+
+class NotificationService {
+  static final NotificationService _instance = NotificationService._internal();
+
+  factory NotificationService() => _instance;
+
+  NotificationService._internal();
+
+  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
+
+  Future<void> init() async {
+    if (kIsWeb) return;
+    
+    tz.initializeTimeZones();
+    const AndroidInitializationSettings initializationSettingsAndroid =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
+    
+    // Request permission for newer Android versions
+    flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.requestNotificationsPermission();
+        
+    flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.requestExactAlarmsPermission();
+
+    const InitializationSettings initializationSettings =
+        InitializationSettings(android: initializationSettingsAndroid);
+
+    // Initialize using named arguments
+    try {
+      await flutterLocalNotificationsPlugin.initialize(settings: initializationSettings);
+    } catch (e) {
+      print('Notification Init Error (safe to ignore if on simulator): $e');
+    }
+  }
+
+  int _generateId(String idString) {
+    // Generate a consistent positive integer from a string ID
+    return idString.hashCode.abs() % 2147483647;
+  }
+
+  Future<void> scheduleTask(TaskModel task) async {
+    if (kIsWeb) return;
+    if (task.dueDate == null || task.dueTime == null || task.isCompleted) return;
+
+    final int id = _generateId(task.id);
+
+    final scheduledDate = DateTime(
+      task.dueDate!.year,
+      task.dueDate!.month,
+      task.dueDate!.day,
+      task.dueTime!.hour,
+      task.dueTime!.minute,
+    );
+
+    if (scheduledDate.isBefore(DateTime.now())) return;
+
+    await flutterLocalNotificationsPlugin.zonedSchedule(
+      id: id,
+      title: 'Task Reminder: ${task.title}',
+      body: 'It is time to ${task.title}!',
+      scheduledDate: tz.TZDateTime.from(scheduledDate, tz.local),
+      notificationDetails: const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'task_reminders',
+          'Task Reminders',
+          channelDescription: 'Notifications for upcoming deadline tasks',
+          importance: Importance.high,
+          priority: Priority.high,
+        ),
+      ),
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+    );
+  }
+
+  Future<void> scheduleTimetableBlock(
+      ScheduleBlockModel block, SubjectModel subject, String day) async {
+    if (kIsWeb) return;
+
+    final int id = _generateId(block.id);
+
+    final days = [
+      'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'
+    ];
+    final targetDay = days.indexOf(day) + 1; // 1 = Monday, 7 = Sunday
+    
+    // Parse time (e.g., "8:00 AM" or "8:00 – 10:00 AM")
+    final timeStr = block.time.split('–').first.trim();
+    int hour = 8;
+    int minute = 0;
+    
+    try {
+      final isPM = timeStr.toLowerCase().contains('pm');
+      var timePart = timeStr.replaceAll(RegExp(r'[a-zA-Z\s]'), '');
+      if (timePart.contains(':')) {
+        final parts = timePart.split(':');
+        int h = int.parse(parts[0]);
+        if (isPM && h < 12) h += 12;
+        if (!isPM && h == 12) h = 0;
+        hour = h;
+        minute = int.parse(parts[1]);
+      }
+    } catch (_) {}
+
+    tz.TZDateTime scheduleDate = _nextInstanceOfDayAndTime(targetDay, hour, minute);
+
+    await flutterLocalNotificationsPlugin.zonedSchedule(
+      id: id,
+      title: 'Class Starting: ${subject.name}',
+      body: 'Your ${subject.name} session begins now.',
+      scheduledDate: scheduleDate,
+      notificationDetails: const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'timetable_alerts',
+          'Timetable Alerts',
+          channelDescription: 'Notifications for your weekly classes',
+          importance: Importance.defaultImportance,
+          priority: Priority.defaultPriority,
+        ),
+      ),
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+    );
+  }
+
+  tz.TZDateTime _nextInstanceOfDayAndTime(int dayOfWeek, int hour, int minute) {
+    tz.TZDateTime now = tz.TZDateTime.now(tz.local);
+    tz.TZDateTime scheduledDate =
+        tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
+    while (scheduledDate.weekday != dayOfWeek) {
+      scheduledDate = scheduledDate.add(const Duration(days: 1));
+    }
+    if (scheduledDate.isBefore(now)) {
+      scheduledDate = scheduledDate.add(const Duration(days: 7));
+    }
+    return scheduledDate;
+  }
+
+  Future<void> cancelNotification(String idString) async {
+    if (kIsWeb) return;
+    await flutterLocalNotificationsPlugin.cancel(id: _generateId(idString));
+  }
+  
+  Future<void> cancelAll() async {
+    if (kIsWeb) return;
+    await flutterLocalNotificationsPlugin.cancelAll();
+  }
+
+  Future<void> rescheduleAll() async {
+    if (kIsWeb) return;
+    await cancelAll();
+    
+    // Reschedule Tasks
+    final tasks = HiveService().getTasks();
+    for (var task in tasks) {
+      await scheduleTask(task);
+    }
+    
+    // Reschedule Timetable
+    final subjects = HiveService().getSubjects();
+    final scheduleMap = HiveService().getScheduleBlocks();
+    
+    for (var entry in scheduleMap.entries) {
+      final day = entry.key;
+      for (var block in entry.value) {
+        try {
+          final subject = subjects.firstWhere((s) => s.id == block.subjectId);
+          await scheduleTimetableBlock(block, subject, day);
+        } catch (_) {}
+      }
+    }
+  }
+}

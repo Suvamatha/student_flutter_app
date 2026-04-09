@@ -1,7 +1,7 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../models/timetable_model.dart';
+import '../services/hive_service.dart';
+import '../services/notification_service.dart';
 import '../theme/app_theme.dart';
 
 class TimetableProvider extends ChangeNotifier {
@@ -19,56 +19,70 @@ class TimetableProvider extends ChangeNotifier {
     _loadData();
   }
 
-  Future<void> _loadData() async {
-    _isLoading = true;
-    notifyListeners();
+  void _loadData() {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      
-      final subjectsJson = prefs.getStringList('timetable_subjects') ?? [];
-      _subjects = subjectsJson.map((s) => SubjectModel.fromJson(jsonDecode(s))).toList();
-
-      final scheduleString = prefs.getString('timetable_schedule');
-      if (scheduleString != null) {
-        final Map<String, dynamic> decoded = jsonDecode(scheduleString);
-        _schedule = decoded.map((key, value) {
-          final list = (value as List).map((i) => ScheduleBlockModel.fromJson(i as Map<String, dynamic>)).toList();
-          return MapEntry(key, list);
-        });
-      }
+      _subjects = HiveService().getSubjects();
+      _schedule = HiveService().getScheduleBlocks();
     } catch (_) {
     }
-    _isLoading = false;
-    notifyListeners();
   }
-
-
-
-  Future<void> _saveData() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      
-      final subjectsJson = _subjects.map((s) => jsonEncode(s.toJson())).toList();
-      await prefs.setStringList('timetable_subjects', subjectsJson);
-
-      final scheduleJsonData = _schedule.map((key, value) => MapEntry(key, value.map((b) => b.toJson()).toList()));
-      await prefs.setString('timetable_schedule', jsonEncode(scheduleJsonData));
-    } catch (_) {}
-  }
-
-  void addSubject(SubjectModel subject) {
+  Future<void> addSubject(SubjectModel subject) async {
     _subjects.add(subject);
     notifyListeners();
-    _saveData();
+    await HiveService().saveSubject(subject);
   }
 
-  void deleteSubject(String id) {
+  Future<void> deleteSubject(String id) async {
     _subjects.removeWhere((s) => s.id == id);
+    await HiveService().deleteSubject(id);
     for (var day in days) {
-      _schedule[day]?.removeWhere((b) => b.subjectId == id);
+      final blocks = _schedule[day] ?? [];
+      final removedBlocks = blocks.where((b) => b.subjectId == id).toList();
+      blocks.removeWhere((b) => b.subjectId == id);
+      await HiveService().saveScheduleBlocksForDay(day, blocks);
+      for (var block in removedBlocks) {
+        await NotificationService().cancelNotification(block.id);
+      }
     }
     notifyListeners();
-    _saveData();
+  }
+
+  Future<void> addScheduleBlock(String day, ScheduleBlockModel block) async {
+    if (!_schedule.containsKey(day)) {
+      _schedule[day] = [];
+    }
+    _schedule[day]!.add(block);
+    
+    notifyListeners();
+    await HiveService().saveScheduleBlocksForDay(day, _schedule[day]!);
+    
+    final subject = getSubjectById(block.subjectId);
+    if (subject != null) {
+      await NotificationService().scheduleTimetableBlock(block, subject, day);
+    }
+  }
+
+  Future<void> updateScheduleBlock(String day, ScheduleBlockModel block) async {
+    if (!_schedule.containsKey(day)) return;
+    final index = _schedule[day]!.indexWhere((b) => b.id == block.id);
+    if (index != -1) {
+      _schedule[day]![index] = block;
+      notifyListeners();
+      await HiveService().saveScheduleBlocksForDay(day, _schedule[day]!);
+      
+      final subject = getSubjectById(block.subjectId);
+      if (subject != null) {
+        await NotificationService().scheduleTimetableBlock(block, subject, day);
+      }
+    }
+  }
+
+  Future<void> deleteScheduleBlock(String day, String blockId) async {
+    if (!_schedule.containsKey(day)) return;
+    _schedule[day]!.removeWhere((b) => b.id == blockId);
+    notifyListeners();
+    await HiveService().saveScheduleBlocksForDay(day, _schedule[day]!);
+    await NotificationService().cancelNotification(blockId);
   }
 
   // Helper method for the UI

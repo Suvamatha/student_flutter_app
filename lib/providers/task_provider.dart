@@ -1,7 +1,7 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../models/task_model.dart';
+import '../services/hive_service.dart';
+import '../services/notification_service.dart';
 
 class TaskProvider extends ChangeNotifier {
   List<TaskModel> _tasks = [];
@@ -44,34 +44,19 @@ class TaskProvider extends ChangeNotifier {
 
 
 
-  Future<void> _loadTasks() async {
-    _isLoading = true;
-    notifyListeners();
+  void _loadTasks() {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final jsonList = prefs.getStringList('tasks') ?? [];
-      _tasks = jsonList
-          .map((s) => TaskModel.fromJson(jsonDecode(s)))
-          .toList();
+      _tasks = HiveService().getTasks();
     } catch (_) {
       _tasks = [];
     }
-    _isLoading = false;
-    notifyListeners();
-  }
-
-  Future<void> _saveTasks() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final jsonList = _tasks.map((t) => jsonEncode(t.toJson())).toList();
-      await prefs.setStringList('tasks', jsonList);
-    } catch (_) {}
   }
 
   Future<void> addTask(TaskModel task) async {
     _tasks.add(task);
     notifyListeners();
-    await _saveTasks();
+    await HiveService().saveTask(task);
+    await NotificationService().scheduleTask(task);
   }
 
   Future<void> updateTask(TaskModel task) async {
@@ -79,25 +64,37 @@ class TaskProvider extends ChangeNotifier {
     if (index != -1) {
       _tasks[index] = task;
       notifyListeners();
-      await _saveTasks();
+      await HiveService().saveTask(task);
+      if (task.isCompleted) {
+        await NotificationService().cancelNotification(task.id);
+      } else {
+        await NotificationService().scheduleTask(task);
+      }
     }
   }
 
   Future<void> toggleComplete(String taskId) async {
     final index = _tasks.indexWhere((t) => t.id == taskId);
     if (index != -1) {
-      _tasks[index] = _tasks[index].copyWith(
+      final updatedTask = _tasks[index].copyWith(
         isCompleted: !_tasks[index].isCompleted,
       );
+      _tasks[index] = updatedTask;
       notifyListeners();
-      await _saveTasks();
+      await HiveService().saveTask(updatedTask);
+      if (updatedTask.isCompleted) {
+        await NotificationService().cancelNotification(taskId);
+      } else {
+        await NotificationService().scheduleTask(updatedTask);
+      }
     }
   }
 
   Future<void> deleteTask(String taskId) async {
     _tasks.removeWhere((t) => t.id == taskId);
     notifyListeners();
-    await _saveTasks();
+    await HiveService().deleteTask(taskId);
+    await NotificationService().cancelNotification(taskId);
   }
 
   String generateId() =>

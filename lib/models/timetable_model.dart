@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hive/hive.dart';
 
 class SubjectModel {
   final String id;
@@ -61,5 +62,71 @@ class ScheduleBlockModel {
       time: json['time'] ?? '9:00 AM',
       durationMinutes: json['durationMinutes'] ?? 60,
     );
+  }
+}
+
+class SubjectModelAdapter extends TypeAdapter<SubjectModel> {
+  @override
+  final int typeId = 1;
+
+  @override
+  SubjectModel read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return SubjectModel(
+      id: fields[0] as String,
+      name: fields[1] as String,
+      color: Color(fields[2] as int),
+      hoursPerWeek: fields[3] as int,
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, SubjectModel obj) {
+    writer
+      ..writeByte(4)
+      ..writeByte(0)
+      ..write(obj.id)
+      ..writeByte(1)
+      ..write(obj.name)
+      ..writeByte(2)
+      ..write(obj.color.value)
+      ..writeByte(3)
+      ..write(obj.hoursPerWeek);
+  }
+}
+
+class ScheduleBlockModelAdapter extends TypeAdapter<ScheduleBlockModel> {
+  @override
+  final int typeId = 2;
+
+  @override
+  ScheduleBlockModel read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return ScheduleBlockModel(
+      id: fields[0] as String,
+      subjectId: fields[1] as String,
+      time: fields[2] as String,
+      durationMinutes: fields[3] as int,
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, ScheduleBlockModel obj) {
+    writer
+      ..writeByte(4)
+      ..writeByte(0)
+      ..write(obj.id)
+      ..writeByte(1)
+      ..write(obj.subjectId)
+      ..writeByte(2)
+      ..write(obj.time)
+      ..writeByte(3)
+      ..write(obj.durationMinutes);
   }
 }

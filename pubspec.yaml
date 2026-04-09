@@ -37,6 +37,10 @@ dependencies:
   # Lottie animations (optional)
   lottie: ^3.0.0
   syncfusion_flutter_pdf: ^33.1.47
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  flutter_local_notifications: ^20.1.0
+  timezone: ^0.10.1
 
 dev_dependencies:
   flutter_test:

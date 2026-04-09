@@ -41,7 +41,7 @@ class _TasksScreenState extends State<TasksScreen>
         title: Text('Tasks', style: AppTheme.headlineMedium),
         actions: [
           IconButton(
-            onPressed: () => _showAddTaskSheet(context),
+            onPressed: () => _showTaskSheet(context),
             icon: Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
@@ -79,6 +79,7 @@ class _TasksScreenState extends State<TasksScreen>
                 emptyEmoji: '🎉',
                 onToggle: provider.toggleComplete,
                 onDelete: provider.deleteTask,
+                onEdit: (task) => _showTaskSheet(context, task: task),
               ),
               _TaskList(
                 tasks: provider.tasks,
@@ -86,6 +87,7 @@ class _TasksScreenState extends State<TasksScreen>
                 emptyEmoji: '📋',
                 onToggle: provider.toggleComplete,
                 onDelete: provider.deleteTask,
+                onEdit: (task) => _showTaskSheet(context, task: task),
               ),
               _TaskList(
                 tasks: provider.completedTasks,
@@ -93,13 +95,14 @@ class _TasksScreenState extends State<TasksScreen>
                 emptyEmoji: '⭐',
                 onToggle: provider.toggleComplete,
                 onDelete: provider.deleteTask,
+                onEdit: (task) => _showTaskSheet(context, task: task),
               ),
             ],
           );
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showAddTaskSheet(context),
+        onPressed: () => _showTaskSheet(context),
         backgroundColor: AppTheme.primary,
         elevation: 0,
         icon: const Icon(Icons.add_rounded, color: Colors.white),
@@ -111,13 +114,20 @@ class _TasksScreenState extends State<TasksScreen>
     );
   }
 
-  void _showAddTaskSheet(BuildContext context) {
+  void _showTaskSheet(BuildContext context, {TaskModel? task}) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _AddTaskSheet(
-        onAdd: (task) => context.read<TaskProvider>().addTask(task),
+      builder: (_) => _TaskFormSheet(
+        initialTask: task,
+        onSave: (savedTask) {
+          if (task == null) {
+            context.read<TaskProvider>().addTask(savedTask);
+          } else {
+            context.read<TaskProvider>().updateTask(savedTask);
+          }
+        },
       ),
     );
   }
@@ -129,6 +139,7 @@ class _TaskList extends StatelessWidget {
   final String emptyEmoji;
   final Future<void> Function(String) onToggle;
   final Future<void> Function(String) onDelete;
+  final void Function(TaskModel) onEdit;
 
   const _TaskList({
     required this.tasks,
@@ -136,6 +147,7 @@ class _TaskList extends StatelessWidget {
     required this.emptyEmoji,
     required this.onToggle,
     required this.onDelete,
+    required this.onEdit,
   });
 
   @override
@@ -169,6 +181,7 @@ class _TaskList extends StatelessWidget {
             task: task,
             animationIndex: i,
             onToggle: () => onToggle(task.id),
+            onTap: () => onEdit(task),
             onDelete: () {
               onDelete(task.id);
               ScaffoldMessenger.of(context).showSnackBar(
@@ -178,11 +191,6 @@ class _TaskList extends StatelessWidget {
                   behavior: SnackBarBehavior.floating,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(AppTheme.radiusSM),
-                  ),
-                  action: SnackBarAction(
-                    label: 'Undo',
-                    textColor: Colors.white,
-                    onPressed: () {}, // In production: restore task
                   ),
                 ),
               );
@@ -194,22 +202,36 @@ class _TaskList extends StatelessWidget {
   }
 }
 
-// ── Add Task Bottom Sheet ──────────────────────────────────────────
-class _AddTaskSheet extends StatefulWidget {
-  final void Function(TaskModel task) onAdd;
-  const _AddTaskSheet({required this.onAdd});
+// ── Task Bottom Sheet ──────────────────────────────────────────
+class _TaskFormSheet extends StatefulWidget {
+  final void Function(TaskModel task) onSave;
+  final TaskModel? initialTask;
+  const _TaskFormSheet({required this.onSave, this.initialTask});
 
   @override
-  State<_AddTaskSheet> createState() => _AddTaskSheetState();
+  State<_TaskFormSheet> createState() => _TaskFormSheetState();
 }
 
-class _AddTaskSheetState extends State<_AddTaskSheet> {
+class _TaskFormSheetState extends State<_TaskFormSheet> {
   final _titleController = TextEditingController();
   final _descController = TextEditingController();
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
   TaskPriority _priority = TaskPriority.medium;
   TaskSubject _subject = TaskSubject.other;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialTask != null) {
+      _titleController.text = widget.initialTask!.title;
+      _descController.text = widget.initialTask!.description ?? '';
+      _selectedDate = widget.initialTask!.dueDate;
+      _selectedTime = widget.initialTask!.dueTime;
+      _priority = widget.initialTask!.priority;
+      _subject = widget.initialTask!.subject;
+    }
+  }
 
   @override
   void dispose() {
@@ -222,7 +244,7 @@ class _AddTaskSheetState extends State<_AddTaskSheet> {
     if (_titleController.text.trim().isEmpty) return;
 
     final task = TaskModel(
-      id: 'task_${DateTime.now().millisecondsSinceEpoch}',
+      id: widget.initialTask?.id ?? 'task_${DateTime.now().millisecondsSinceEpoch}',
       title: _titleController.text.trim(),
       description: _descController.text.trim().isEmpty
           ? null
@@ -231,9 +253,11 @@ class _AddTaskSheetState extends State<_AddTaskSheet> {
       dueTime: _selectedTime,
       priority: _priority,
       subject: _subject,
+      isCompleted: widget.initialTask?.isCompleted ?? false,
+      createdAt: widget.initialTask?.createdAt,
     );
 
-    widget.onAdd(task);
+    widget.onSave(task);
     Navigator.pop(context);
   }
 
@@ -295,13 +319,13 @@ class _AddTaskSheetState extends State<_AddTaskSheet> {
             ),
           ),
 
-          Text('New Task', style: AppTheme.headlineMedium),
+          Text(widget.initialTask == null ? 'New Task' : 'Edit Task', style: AppTheme.headlineMedium),
           const SizedBox(height: 16),
 
           // Title
           TextField(
             controller: _titleController,
-            autofocus: true,
+            autofocus: widget.initialTask == null,
             decoration: const InputDecoration(hintText: 'Task title'),
             style: AppTheme.bodyLarge,
           ),
@@ -428,8 +452,8 @@ class _AddTaskSheetState extends State<_AddTaskSheet> {
 
           // Submit
           CustomButton(
-            label: 'Add Task',
-            icon: Icons.add_task_rounded,
+            label: widget.initialTask == null ? 'Add Task' : 'Save Changes',
+            icon: widget.initialTask == null ? Icons.add_task_rounded : Icons.save_rounded,
             onPressed: _submit,
           ),
         ],
