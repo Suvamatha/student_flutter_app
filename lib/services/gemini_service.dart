@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../models/note_model.dart';
 import '../models/flashcard_model.dart';
 
@@ -11,11 +12,7 @@ class GeminiResult {
 }
 
 class GeminiService {
-  // ── PASTE YOUR GROQ API KEY HERE ────────────────────────────────
-  // Get one FREE at: https://console.groq.com → API Keys
-  // Free tier: ~14,400 requests/day. No credit card needed.
-  static const String _apiKey = 'YOUR_GROQ_API';
-  // ────────────────────────────────────────────────────────────────
+  static String get _apiKey => dotenv.env['GROQ_API_KEY'] ?? 'YOUR_GROQ_API_KEY';
   static bool get hasApiKey => _apiKey.length > 10 && _apiKey != 'YOUR_GROQ_API_KEY';
 
   static const String _model = 'llama-3.3-70b-versatile';

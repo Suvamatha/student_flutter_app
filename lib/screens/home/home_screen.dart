@@ -60,16 +60,11 @@ class HomeScreen extends StatelessWidget {
                       width: 42,
                       height: 42,
                       decoration: BoxDecoration(
-                        gradient: AppGradients.primary,
-                        borderRadius:
-                            BorderRadius.circular(AppTheme.radiusSM),
-                      ),
-                      child: const Center(
-                        child: Text('S',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w800,
-                                fontSize: 18)),
+                        borderRadius: BorderRadius.circular(AppTheme.radiusSM),
+                        image: const DecorationImage(
+                          image: NetworkImage('https://media.tenor.com/PZcGBG5jBToAAAAM/mikasa-ackerman-attack-on-titan.gif'),
+                          fit: BoxFit.cover,
+                        ),
                       ),
                     ),
                   ],

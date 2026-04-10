@@ -3,12 +3,14 @@ import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:flutter/material.dart' show TimeOfDay;
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter_timezone/flutter_timezone.dart'; // FIX: added
 import '../models/task_model.dart';
 import '../models/timetable_model.dart';
 import 'hive_service.dart';
 
 class NotificationService {
-  static final NotificationService _instance = NotificationService._internal();
+  static final NotificationService _instance =
+      NotificationService._internal();
 
   factory NotificationService() => _instance;
 
@@ -19,17 +21,22 @@ class NotificationService {
 
   Future<void> init() async {
     if (kIsWeb) return;
-    
+
     tz.initializeTimeZones();
+
+    // FIX: set local timezone so scheduled times match the device clock
+    final String localTimeZone =
+        await FlutterTimezone.getLocalTimezone();
+    tz.setLocalLocation(tz.getLocation(localTimeZone));
+
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
-    
-    // Request permission for newer Android versions
+
     flutterLocalNotificationsPlugin
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>()
         ?.requestNotificationsPermission();
-        
+
     flutterLocalNotificationsPlugin
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>()
@@ -38,22 +45,22 @@ class NotificationService {
     const InitializationSettings initializationSettings =
         InitializationSettings(android: initializationSettingsAndroid);
 
-    // Initialize using named arguments
     try {
-      await flutterLocalNotificationsPlugin.initialize(settings: initializationSettings);
+      await flutterLocalNotificationsPlugin.initialize(
+          settings: initializationSettings);
     } catch (e) {
-      print('Notification Init Error (safe to ignore if on simulator): $e');
+      print('Notification Init Error (safe to ignore on simulator): $e');
     }
   }
 
   int _generateId(String idString) {
-    // Generate a consistent positive integer from a string ID
     return idString.hashCode.abs() % 2147483647;
   }
 
   Future<void> scheduleTask(TaskModel task) async {
     if (kIsWeb) return;
-    if (task.dueDate == null || task.dueTime == null || task.isCompleted) return;
+    if (task.dueDate == null || task.dueTime == null || task.isCompleted)
+      return;
 
     final int id = _generateId(task.id);
 
@@ -67,22 +74,47 @@ class NotificationService {
 
     if (scheduledDate.isBefore(DateTime.now())) return;
 
-    await flutterLocalNotificationsPlugin.zonedSchedule(
-      id: id,
-      title: 'Task Reminder: ${task.title}',
-      body: 'It is time to ${task.title}!',
-      scheduledDate: tz.TZDateTime.from(scheduledDate, tz.local),
-      notificationDetails: const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'task_reminders',
-          'Task Reminders',
-          channelDescription: 'Notifications for upcoming deadline tasks',
-          importance: Importance.high,
-          priority: Priority.high,
+    try {
+      await flutterLocalNotificationsPlugin.zonedSchedule(
+        id: id,
+        title: 'Task Reminder: ${task.title}',
+        body: 'It is time to ${task.title}!',
+        scheduledDate: tz.TZDateTime.from(scheduledDate, tz.local),
+        notificationDetails: const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'task_reminders',
+            'Task Reminders',
+            channelDescription:
+                'Notifications for upcoming deadline tasks',
+            importance: Importance.high,
+            priority: Priority.high,
+          ),
         ),
-      ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-    );
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      );
+    } catch (_) {
+      try {
+        await flutterLocalNotificationsPlugin.zonedSchedule(
+          id: id,
+          title: 'Task Reminder: ${task.title}',
+          body: 'It is time to ${task.title}!',
+          scheduledDate: tz.TZDateTime.from(scheduledDate, tz.local),
+          notificationDetails: const NotificationDetails(
+            android: AndroidNotificationDetails(
+              'task_reminders',
+              'Task Reminders',
+              channelDescription:
+                  'Notifications for upcoming deadline tasks',
+              importance: Importance.high,
+              priority: Priority.high,
+            ),
+          ),
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        );
+      } catch (e) {
+        print('Failed to schedule inexact task reminder: $e');
+      }
+    }
   }
 
   Future<void> scheduleTimetableBlock(
@@ -92,15 +124,15 @@ class NotificationService {
     final int id = _generateId(block.id);
 
     final days = [
-      'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'
+      'Monday', 'Tuesday', 'Wednesday', 'Thursday',
+      'Friday', 'Saturday', 'Sunday'
     ];
-    final targetDay = days.indexOf(day) + 1; // 1 = Monday, 7 = Sunday
-    
-    // Parse time (e.g., "8:00 AM" or "8:00 – 10:00 AM")
+    final targetDay = days.indexOf(day) + 1;
+
     final timeStr = block.time.split('–').first.trim();
     int hour = 8;
     int minute = 0;
-    
+
     try {
       final isPM = timeStr.toLowerCase().contains('pm');
       var timePart = timeStr.replaceAll(RegExp(r'[a-zA-Z\s]'), '');
@@ -114,31 +146,57 @@ class NotificationService {
       }
     } catch (_) {}
 
-    tz.TZDateTime scheduleDate = _nextInstanceOfDayAndTime(targetDay, hour, minute);
+    tz.TZDateTime scheduleDate =
+        _nextInstanceOfDayAndTime(targetDay, hour, minute);
 
-    await flutterLocalNotificationsPlugin.zonedSchedule(
-      id: id,
-      title: 'Class Starting: ${subject.name}',
-      body: 'Your ${subject.name} session begins now.',
-      scheduledDate: scheduleDate,
-      notificationDetails: const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'timetable_alerts',
-          'Timetable Alerts',
-          channelDescription: 'Notifications for your weekly classes',
-          importance: Importance.defaultImportance,
-          priority: Priority.defaultPriority,
+    try {
+      await flutterLocalNotificationsPlugin.zonedSchedule(
+        id: id,
+        title: 'Class Starting: ${subject.name}',
+        body: 'Your ${subject.name} session begins now.',
+        scheduledDate: scheduleDate,
+        notificationDetails: const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'timetable_alerts',
+            'Timetable Alerts',
+            channelDescription: 'Notifications for your weekly classes',
+            importance: Importance.defaultImportance,
+            priority: Priority.defaultPriority,
+          ),
         ),
-      ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
-    );
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+      );
+    } catch (_) {
+      try {
+        await flutterLocalNotificationsPlugin.zonedSchedule(
+          id: id,
+          title: 'Class Starting: ${subject.name}',
+          body: 'Your ${subject.name} session begins now.',
+          scheduledDate: scheduleDate,
+          notificationDetails: const NotificationDetails(
+            android: AndroidNotificationDetails(
+              'timetable_alerts',
+              'Timetable Alerts',
+              channelDescription: 'Notifications for your weekly classes',
+              importance: Importance.defaultImportance,
+              priority: Priority.defaultPriority,
+            ),
+          ),
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+        );
+      } catch (e) {
+        print('Failed to schedule inexact timetable reminder: $e');
+      }
+    }
   }
 
-  tz.TZDateTime _nextInstanceOfDayAndTime(int dayOfWeek, int hour, int minute) {
+  tz.TZDateTime _nextInstanceOfDayAndTime(
+      int dayOfWeek, int hour, int minute) {
     tz.TZDateTime now = tz.TZDateTime.now(tz.local);
-    tz.TZDateTime scheduledDate =
-        tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
+    tz.TZDateTime scheduledDate = tz.TZDateTime(
+        tz.local, now.year, now.month, now.day, hour, minute);
     while (scheduledDate.weekday != dayOfWeek) {
       scheduledDate = scheduledDate.add(const Duration(days: 1));
     }
@@ -150,9 +208,10 @@ class NotificationService {
 
   Future<void> cancelNotification(String idString) async {
     if (kIsWeb) return;
-    await flutterLocalNotificationsPlugin.cancel(id: _generateId(idString));
+    await flutterLocalNotificationsPlugin
+        .cancel(id: _generateId(idString));
   }
-  
+
   Future<void> cancelAll() async {
     if (kIsWeb) return;
     await flutterLocalNotificationsPlugin.cancelAll();
@@ -161,22 +220,21 @@ class NotificationService {
   Future<void> rescheduleAll() async {
     if (kIsWeb) return;
     await cancelAll();
-    
-    // Reschedule Tasks
+
     final tasks = HiveService().getTasks();
     for (var task in tasks) {
       await scheduleTask(task);
     }
-    
-    // Reschedule Timetable
+
     final subjects = HiveService().getSubjects();
     final scheduleMap = HiveService().getScheduleBlocks();
-    
+
     for (var entry in scheduleMap.entries) {
       final day = entry.key;
       for (var block in entry.value) {
         try {
-          final subject = subjects.firstWhere((s) => s.id == block.subjectId);
+          final subject =
+              subjects.firstWhere((s) => s.id == block.subjectId);
           await scheduleTimetableBlock(block, subject, day);
         } catch (_) {}
       }

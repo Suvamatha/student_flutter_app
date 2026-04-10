@@ -4,6 +4,7 @@ import 'services/hive_service.dart';
 import 'services/notification_service.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'theme/app_theme.dart';
 import 'providers/task_provider.dart';
 import 'providers/flashcard_provider.dart';
@@ -23,10 +24,25 @@ import 'widgets/bottom_nav.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (e) {
+    debugPrint("Failed to load .env file: $e");
+  }
 
-  await HiveService().init();
-  await NotificationService().init();
-  await NotificationService().rescheduleAll();
+  try {
+    await HiveService().init();
+  } catch (e) {
+    debugPrint("Failed to init HiveService: $e");
+  }
+
+  try {
+    await NotificationService().init();
+    await NotificationService().rescheduleAll();
+  } catch (e) {
+    debugPrint("Failed to init NotificationService: $e");
+  }
 
   // Lock to portrait orientation
   SystemChrome.setPreferredOrientations([

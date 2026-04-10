@@ -230,6 +230,10 @@ class _TaskFormSheetState extends State<_TaskFormSheet> {
       _selectedTime = widget.initialTask!.dueTime;
       _priority = widget.initialTask!.priority;
       _subject = widget.initialTask!.subject;
+    } else {
+      _selectedDate = DateTime.now(); // Defaults to today
+      final future = DateTime.now().add(const Duration(hours: 1));
+      _selectedTime = TimeOfDay(hour: future.hour, minute: future.minute);
     }
   }
 
@@ -367,40 +371,6 @@ class _TaskFormSheetState extends State<_TaskFormSheet> {
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: 14),
-
-          // Subject picker
-          Text('Subject', style: AppTheme.labelMedium),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: TaskSubject.values.map((s) {
-              final isSelected = _subject == s;
-              return GestureDetector(
-                onTap: () => setState(() => _subject = s),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 150),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 7),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? AppTheme.primary
-                        : AppTheme.primary.withOpacity(0.06),
-                    borderRadius:
-                        BorderRadius.circular(AppTheme.radiusFull),
-                  ),
-                  child: Text(
-                    s.label,
-                    style: AppTheme.labelMedium.copyWith(
-                      color:
-                          isSelected ? Colors.white : AppTheme.textSecondary,
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
           ),
           const SizedBox(height: 14),
 

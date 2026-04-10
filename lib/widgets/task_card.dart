@@ -131,22 +131,7 @@ class TaskCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: _subjectColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(AppTheme.radiusFull),
-                ),
-                child: Text(
-                  task.subject.label,
-                  style: AppTheme.labelSmall.copyWith(
-                    color: _subjectColor,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
+              // Removed subject badge from card
             ],
           ),
         ),

@@ -13,7 +13,7 @@ class TimetableProvider extends ChangeNotifier {
   Map<String, List<ScheduleBlockModel>> get schedule => _schedule;
   bool get isLoading => _isLoading;
 
-  final List<String> days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+  final List<String> days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
   TimetableProvider() {
     _loadData();

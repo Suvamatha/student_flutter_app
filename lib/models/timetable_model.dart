@@ -76,10 +76,10 @@ class SubjectModelAdapter extends TypeAdapter<SubjectModel> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return SubjectModel(
-      id: fields[0] as String,
-      name: fields[1] as String,
-      color: Color(fields[2] as int),
-      hoursPerWeek: fields[3] as int,
+      id: fields[0] as String? ?? 'sub_${DateTime.now().millisecondsSinceEpoch}',
+      name: fields[1] as String? ?? 'Untitled',
+      color: Color(fields[2] as int? ?? Colors.blue.value),
+      hoursPerWeek: fields[3] as int? ?? 3,
     );
   }
 
@@ -109,10 +109,10 @@ class ScheduleBlockModelAdapter extends TypeAdapter<ScheduleBlockModel> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return ScheduleBlockModel(
-      id: fields[0] as String,
-      subjectId: fields[1] as String,
-      time: fields[2] as String,
-      durationMinutes: fields[3] as int,
+      id: fields[0] as String? ?? 'blk_${DateTime.now().millisecondsSinceEpoch}',
+      subjectId: fields[1] as String? ?? '',
+      time: fields[2] as String? ?? '9:00 AM',
+      durationMinutes: fields[3] as int? ?? 60,
     );
   }
 

@@ -19,7 +19,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
   final _hoursController = TextEditingController();
 
   final List<String> _days = [
-    'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday',
+    'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'
   ];
 
   @override
@@ -56,7 +56,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final today = _days[DateTime.now().weekday - 1 < 5
+    final today = _days[DateTime.now().weekday - 1 < 7
         ? DateTime.now().weekday - 1
         : 0];
 

@@ -9,12 +9,12 @@ enum TaskSubject { math, biology, physics, chemistry, english, other }
 extension TaskSubjectExtension on TaskSubject {
   String get label {
     switch (this) {
-      case TaskSubject.math: return 'Math';
-      case TaskSubject.biology: return 'Biology';
-      case TaskSubject.physics: return 'Physics';
+      case TaskSubject.math:      return 'Math';
+      case TaskSubject.biology:   return 'Biology';
+      case TaskSubject.physics:   return 'Physics';
       case TaskSubject.chemistry: return 'Chemistry';
-      case TaskSubject.english: return 'English';
-      case TaskSubject.other: return 'Other';
+      case TaskSubject.english:   return 'English';
+      case TaskSubject.other:     return 'Other';
     }
   }
 }
@@ -82,9 +82,11 @@ class TaskModel {
         id: json['id'],
         title: json['title'],
         description: json['description'],
-        dueDate: json['dueDate'] != null ? DateTime.parse(json['dueDate']) : null,
+        dueDate:
+            json['dueDate'] != null ? DateTime.parse(json['dueDate']) : null,
         dueTime: json['dueTimeHour'] != null
-            ? TimeOfDay(hour: json['dueTimeHour'], minute: json['dueTimeMinute'])
+            ? TimeOfDay(
+                hour: json['dueTimeHour'], minute: json['dueTimeMinute'])
             : null,
         isCompleted: json['isCompleted'] ?? false,
         priority: TaskPriority.values[json['priority'] ?? 1],
@@ -108,16 +110,27 @@ class TaskModelAdapter extends TypeAdapter<TaskModel> {
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
+
+    TimeOfDay? parsedTime;
+    if (fields[4] != null &&
+        fields[4] is List &&
+        (fields[4] as List).length >= 2) {
+      final list = fields[4] as List;
+      parsedTime = TimeOfDay(hour: list[0] as int, minute: list[1] as int);
+    }
+
     return TaskModel(
-      id: fields[0] as String,
-      title: fields[1] as String,
+      id: fields[0] as String? ??
+          'task_${DateTime.now().millisecondsSinceEpoch}',
+      title: fields[1] as String? ?? 'Untitled',
       description: fields[2] as String?,
       dueDate: fields[3] as DateTime?,
-      dueTime: fields[4] != null ? TimeOfDay(hour: fields[4][0] as int, minute: fields[4][1] as int) : null,
+      dueTime: parsedTime,
       isCompleted: fields[5] as bool? ?? false,
       priority: TaskPriority.values[fields[6] as int? ?? 1],
       subject: TaskSubject.values[fields[7] as int? ?? 5],
-      createdAt: fields[8] as DateTime?,
+      // FIX: was "fields[8] as DateTime?" — non-nullable field needs fallback
+      createdAt: fields[8] as DateTime? ?? DateTime.now(),
     );
   }
 
@@ -134,7 +147,9 @@ class TaskModelAdapter extends TypeAdapter<TaskModel> {
       ..writeByte(3)
       ..write(obj.dueDate)
       ..writeByte(4)
-      ..write(obj.dueTime != null ? [obj.dueTime!.hour, obj.dueTime!.minute] : null)
+      ..write(obj.dueTime != null
+          ? [obj.dueTime!.hour, obj.dueTime!.minute]
+          : null)
       ..writeByte(5)
       ..write(obj.isCompleted)
       ..writeByte(6)

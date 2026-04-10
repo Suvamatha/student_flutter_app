@@ -13,7 +13,7 @@ class HiveService {
 
   Future<void> init() async {
     await Hive.initFlutter();
-    
+
     Hive.registerAdapter(TaskModelAdapter());
     Hive.registerAdapter(SubjectModelAdapter());
     Hive.registerAdapter(ScheduleBlockModelAdapter());
@@ -21,17 +21,13 @@ class HiveService {
     await Future.wait([
       Hive.openBox<TaskModel>(taskBoxName),
       Hive.openBox<SubjectModel>(timetableSubjectBoxName),
-      Hive.openBox<List>(timetableScheduleBoxName), // Lists of ScheduleBlockModel
+      Hive.openBox(timetableScheduleBoxName),
     ]);
   }
 
-  // --- Tasks ---
-
   Box<TaskModel> get _taskBox => Hive.box<TaskModel>(taskBoxName);
 
-  List<TaskModel> getTasks() {
-    return _taskBox.values.toList();
-  }
+  List<TaskModel> getTasks() => _taskBox.values.toList();
 
   Future<void> saveTask(TaskModel task) async {
     await _taskBox.put(task.id, task);
@@ -41,14 +37,12 @@ class HiveService {
     await _taskBox.delete(id);
   }
 
-  // --- Timetable ---
+  Box<SubjectModel> get _subjectBox =>
+      Hive.box<SubjectModel>(timetableSubjectBoxName);
 
-  Box<SubjectModel> get _subjectBox => Hive.box<SubjectModel>(timetableSubjectBoxName);
-  Box<List> get _scheduleBox => Hive.box<List>(timetableScheduleBoxName);
+  Box get _scheduleBox => Hive.box(timetableScheduleBoxName);
 
-  List<SubjectModel> getSubjects() {
-    return _subjectBox.values.toList();
-  }
+  List<SubjectModel> getSubjects() => _subjectBox.values.toList();
 
   Future<void> saveSubject(SubjectModel subject) async {
     await _subjectBox.put(subject.id, subject);
@@ -63,13 +57,15 @@ class HiveService {
     for (var key in _scheduleBox.keys) {
       final list = _scheduleBox.get(key);
       if (list != null) {
-        map[key.toString()] = list.cast<ScheduleBlockModel>().toList();
+        map[key.toString()] =
+            (list as List).cast<ScheduleBlockModel>().toList();
       }
     }
     return map;
   }
 
-  Future<void> saveScheduleBlocksForDay(String day, List<ScheduleBlockModel> blocks) async {
+  Future<void> saveScheduleBlocksForDay(
+      String day, List<ScheduleBlockModel> blocks) async {
     await _scheduleBox.put(day, blocks);
   }
 }
