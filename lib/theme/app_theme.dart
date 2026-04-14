@@ -3,36 +3,36 @@ import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   // ── Color Palette ──────────────────────────────────────────────
-  static const Color primary = Color(0xFF6C63FF);
-  static const Color primaryLight = Color(0xFF8B83FF);
-  static const Color primaryDark = Color(0xFF4F46E5);
+  static const Color primary = Color(0xFF31487A); // YInMn Blue
+  static const Color primaryLight = Color(0xFF8FB3E2); // Jordy Blue
+  static const Color primaryDark = Color(0xFF1E2E4F); // Space cadet
 
-  static const Color secondary = Color(0xFFFF6584);
+  static const Color secondary = Color(0xFF8FB3E2); // Jordy Blue as secondary/accent
 
-  static const Color background = Color(0xFFF8F9FF);
+  static const Color background = Color(0xFFD9E1F1); // Lavender (web)
   static const Color surface = Color(0xFFFFFFFF);
-  static const Color surfaceVariant = Color(0xFFF0F0FF);
+  static const Color surfaceVariant = Color(0xFFE8EEFA);
 
-  static const Color textPrimary = Color(0xFF1A1A2E);
-  static const Color textSecondary = Color(0xFF6B7280);
-  static const Color textHint = Color(0xFF9CA3AF);
+  static const Color textPrimary = Color(0xFF192338); // Oxford Blue
+  static const Color textSecondary = Color(0xFF1E2E4F); // Space cadet
+  static const Color textHint = Color(0xFF7B8AB8);
 
   static const Color success = Color(0xFF10B981);
   static const Color warning = Color(0xFFF59E0B);
   static const Color error = Color(0xFFEF4444);
-  static const Color info = Color(0xFF3B82F6);
+  static const Color info = Color(0xFF31487A);
 
-  static const Color pomodoroGradientStart = Color(0xFF6C63FF);
-  static const Color pomodoroGradientEnd = Color(0xFF4F46E5);
-  static const Color waterGradientStart = Color(0xFF38BDF8);
-  static const Color waterGradientEnd = Color(0xFF0EA5E9);
+  static const Color pomodoroGradientStart = Color(0xFF31487A);
+  static const Color pomodoroGradientEnd = Color(0xFF1E2E4F);
+  static const Color waterGradientStart = Color(0xFF8FB3E2);
+  static const Color waterGradientEnd = Color(0xFF31487A);
 
-  // Subject colors
-  static const Color subjectMath = Color(0xFF6C63FF);
+  // Subject colors (updated to blues)
+  static const Color subjectMath = Color(0xFF31487A);
   static const Color subjectBiology = Color(0xFF10B981);
   static const Color subjectPhysics = Color(0xFFF59E0B);
-  static const Color subjectChemistry = Color(0xFFEC4899);
-  static const Color subjectEnglish = Color(0xFF3B82F6);
+  static const Color subjectChemistry = Color(0xFF8FB3E2);
+  static const Color subjectEnglish = Color(0xFF1E2E4F);
 
   // ── Border Radius ──────────────────────────────────────────────
   static const double radiusXS = 8.0;
@@ -52,7 +52,7 @@ class AppTheme {
   // ── Shadows ────────────────────────────────────────────────────
   static List<BoxShadow> get cardShadow => [
         BoxShadow(
-          color: const Color(0xFF6C63FF).withOpacity(0.06),
+          color: const Color(0xFF31487A).withOpacity(0.06),
           blurRadius: 20,
           offset: const Offset(0, 4),
         ),
@@ -294,30 +294,30 @@ class AppGradients {
   static const LinearGradient primary = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF6C63FF), Color(0xFF8B83FF)],
+    colors: [Color(0xFF31487A), Color(0xFF8FB3E2)],
   );
 
   static const LinearGradient pomodoro = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
-    colors: [Color(0xFF6C63FF), Color(0xFF4F46E5)],
+    colors: [Color(0xFF31487A), Color(0xFF1E2E4F)],
   );
 
   static const LinearGradient water = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
-    colors: [Color(0xFF38BDF8), Color(0xFF0EA5E9)],
+    colors: [Color(0xFF8FB3E2), Color(0xFF31487A)],
   );
 
   static const LinearGradient heroCard = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF6C63FF), Color(0xFF8B83FF)],
+    colors: [Color(0xFF31487A), Color(0xFF1E2E4F)],
   );
 
   static const LinearGradient notesCard = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFFEEF2FF), Color(0xFFF5F3FF)],
+    colors: [Color(0xFFE8EEFA), Color(0xFFD9E1F1)],
   );
 }

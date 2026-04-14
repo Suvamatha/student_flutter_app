@@ -5,6 +5,7 @@ import 'package:percent_indicator/circular_percent_indicator.dart';
 import '../../providers/task_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/task_card.dart';
+import '../../providers/user_provider.dart';
 
 class HomeScreen extends StatelessWidget {
   final Function(int)? onTabChange;
@@ -19,6 +20,16 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Show name setup dialog if name is not set
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final userProv = Provider.of<UserProvider>(context, listen: false);
+      if (userProv.name == null || userProv.name!.isEmpty) {
+        _showNameDialog(context);
+      }
+    });
+
+    final userName = context.watch<UserProvider>().name ?? 'Friend';
+
     return Scaffold(
       backgroundColor: AppTheme.background,
       body: SafeArea(
@@ -45,7 +56,7 @@ class HomeScreen extends StatelessWidget {
                               style: AppTheme.displayLarge,
                               children: [
                                 TextSpan(
-                                  text: 'Babe 👋',
+                                  text: '$userName 👋',
                                   style: AppTheme.displayLarge.copyWith(
                                     color: AppTheme.primary,
                                   ),
@@ -201,7 +212,93 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // _navigate was removed
+  void _showNameDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const _NameSetupDialog(),
+    );
+  }
+}
+
+class _NameSetupDialog extends StatefulWidget {
+  const _NameSetupDialog();
+
+  @override
+  State<_NameSetupDialog> createState() => _NameSetupDialogState();
+}
+
+class _NameSetupDialogState extends State<_NameSetupDialog> {
+  final _controller = TextEditingController();
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      backgroundColor: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('👋', style: TextStyle(fontSize: 40)),
+            const SizedBox(height: 16),
+            Text('Welcome to StudyAI!', style: AppTheme.headlineMedium),
+            const SizedBox(height: 8),
+            Text(
+              "What should I call you?",
+              style: AppTheme.bodyMedium,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            TextField(
+              controller: _controller,
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: 'Enter your name...',
+                prefixIcon: const Icon(Icons.person_outline, size: 20),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              ),
+              onSubmitted: (_) => _save(),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _isLoading ? null : _save,
+                child: _isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text('Get Started'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _save() async {
+    final name = _controller.text.trim();
+    if (name.isEmpty) return;
+
+    setState(() => _isLoading = true);
+    await Provider.of<UserProvider>(context, listen: false).setName(name);
+    if (mounted) Navigator.pop(context);
+  }
 }
 
 class _HeroCard extends StatelessWidget {

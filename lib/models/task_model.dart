@@ -112,11 +112,16 @@ class TaskModelAdapter extends TypeAdapter<TaskModel> {
     };
 
     TimeOfDay? parsedTime;
-    if (fields[4] != null &&
-        fields[4] is List &&
-        (fields[4] as List).length >= 2) {
-      final list = fields[4] as List;
-      parsedTime = TimeOfDay(hour: list[0] as int, minute: list[1] as int);
+    if (fields[4] != null) {
+      if (fields[4] is List && (fields[4] as List).length >= 2) {
+        final list = fields[4] as List;
+        parsedTime = TimeOfDay(hour: list[0] as int, minute: list[1] as int);
+      } else if (fields[4] is String) {
+        final parts = (fields[4] as String).split(':');
+        if (parts.length == 2) {
+          parsedTime = TimeOfDay(hour: int.tryParse(parts[0]) ?? 0, minute: int.tryParse(parts[1]) ?? 0);
+        }
+      }
     }
 
     return TaskModel(
@@ -148,7 +153,7 @@ class TaskModelAdapter extends TypeAdapter<TaskModel> {
       ..write(obj.dueDate)
       ..writeByte(4)
       ..write(obj.dueTime != null
-          ? [obj.dueTime!.hour, obj.dueTime!.minute]
+          ? '${obj.dueTime!.hour}:${obj.dueTime!.minute}'
           : null)
       ..writeByte(5)
       ..write(obj.isCompleted)

@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'services/hive_service.dart';
 import 'services/notification_service.dart';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'theme/app_theme.dart';
 import 'providers/task_provider.dart';
@@ -12,6 +11,7 @@ import 'providers/pomodoro_provider.dart';
 import 'providers/notes_provider.dart';
 import 'providers/water_provider.dart';
 import 'providers/timetable_provider.dart';
+import 'providers/user_provider.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/upload/upload_screen.dart';
 import 'screens/notes/notes_screen.dart';
@@ -25,36 +25,44 @@ import 'widgets/bottom_nav.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
+  // 1. Load Environment Variables
   try {
     await dotenv.load(fileName: ".env");
   } catch (e) {
     debugPrint("Failed to load .env file: $e");
   }
 
+  // 2. Initialize Hive Service (CRITICAL for Storage)
   try {
     await HiveService().init();
+    debugPrint("Hive initialized successfully");
   } catch (e) {
-    debugPrint("Failed to init HiveService: $e");
+    debugPrint("CRITICAL: Failed to init HiveService: $e");
   }
 
+  // 3. Initialize Notification Service
   try {
-    await NotificationService().init();
-    await NotificationService().rescheduleAll();
+    final notificationService = NotificationService();
+    await notificationService.init();
+    await notificationService.rescheduleAll();
+    debugPrint("Notifications initialized successfully");
   } catch (e) {
     debugPrint("Failed to init NotificationService: $e");
   }
 
   // Lock to portrait orientation
-  SystemChrome.setPreferredOrientations([
+  await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
 
-  // Transparent status bar
+  // Modern UI adjustments
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.dark,
+      systemNavigationBarColor: Colors.white,
+      systemNavigationBarIconBrightness: Brightness.dark,
     ),
   );
 
@@ -68,6 +76,7 @@ class StudyAIApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => UserProvider()),
         ChangeNotifierProvider(create: (_) => TaskProvider()),
         ChangeNotifierProvider(create: (_) => FlashcardProvider()),
         ChangeNotifierProvider(create: (_) => PomodoroProvider()),

@@ -10,6 +10,8 @@ class HiveService {
   static const String taskBoxName = 'tasksBox';
   static const String timetableSubjectBoxName = 'timetableSubjectBox';
   static const String timetableScheduleBoxName = 'timetableScheduleBox';
+  static const String settingsBoxName = 'settingsBox';
+  static const String notesBoxName = 'notesBox';
 
   Future<void> init() async {
     await Hive.initFlutter();
@@ -22,6 +24,8 @@ class HiveService {
       Hive.openBox<TaskModel>(taskBoxName),
       Hive.openBox<SubjectModel>(timetableSubjectBoxName),
       Hive.openBox(timetableScheduleBoxName),
+      Hive.openBox(settingsBoxName),
+      Hive.openBox<String>(notesBoxName),
     ]);
   }
 
@@ -67,5 +71,14 @@ class HiveService {
   Future<void> saveScheduleBlocksForDay(
       String day, List<ScheduleBlockModel> blocks) async {
     await _scheduleBox.put(day, blocks);
+  }
+
+  // User Name Methods
+  String? getUserName() {
+    return Hive.box(settingsBoxName).get('userName');
+  }
+
+  Future<void> saveUserName(String name) async {
+    await Hive.box(settingsBoxName).put('userName', name);
   }
 }

@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:hive/hive.dart';
 import '../models/note_model.dart';
 import '../models/flashcard_model.dart';
 import '../services/gemini_service.dart';
@@ -22,7 +23,30 @@ class NotesProvider extends ChangeNotifier {
   List<NoteModel> get bookmarkedNotes =>
       _allNotes.where((n) => n.isBookmarked).toList();
 
-  NotesProvider();
+  NotesProvider() {
+    _loadData();
+  }
+
+  void _loadData() {
+    try {
+      final box = Hive.box<String>('notesBox');
+      final notesList = box.values.map((js) => NoteModel.fromJsonString(js)).toList();
+      notesList.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      _allNotes = notesList;
+    } catch (_) {
+      _allNotes = [];
+    }
+  }
+
+  Future<void> _saveNotes() async {
+    try {
+      final box = Hive.box<String>('notesBox');
+      await box.clear();
+      for (var note in _allNotes) {
+        await box.put(note.id, note.toJsonString());
+      }
+    } catch (_) {}
+  }
 
   Future<void> generateFromBytes({
     required Uint8List fileBytes,
@@ -64,6 +88,7 @@ class NotesProvider extends ChangeNotifier {
       _currentNote = note;
       _currentFlashcards = result.flashcards;
       _allNotes.insert(0, note);
+      _saveNotes();
     } on Exception catch (e) {
       _error = e.toString().replaceFirst('Exception: ', '');
     } catch (e) {
@@ -90,6 +115,7 @@ class NotesProvider extends ChangeNotifier {
         _currentNote = result.note;
         _currentFlashcards = result.flashcards;
         _allNotes.insert(0, result.note);
+        _saveNotes();
       } else {
         _isLoading = false;
         _statusMessage = '';
@@ -116,6 +142,7 @@ class NotesProvider extends ChangeNotifier {
         _currentNote = _allNotes[index];
       }
       notifyListeners();
+      _saveNotes();
     }
   }
 

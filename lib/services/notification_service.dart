@@ -2,7 +2,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:flutter/material.dart' show TimeOfDay;
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:flutter_timezone/flutter_timezone.dart'; // FIX: added
 import '../models/task_model.dart';
 import '../models/timetable_model.dart';
@@ -25,32 +25,66 @@ class NotificationService {
     tz.initializeTimeZones();
 
     // FIX: set local timezone so scheduled times match the device clock
-    final String localTimeZone =
-        await FlutterTimezone.getLocalTimezone();
-    tz.setLocalLocation(tz.getLocation(localTimeZone));
+    try {
+      final String localTimeZone = await FlutterTimezone.getLocalTimezone();
+      tz.setLocalLocation(tz.getLocation(localTimeZone));
+    } catch (e) {
+      debugPrint('Error setting timezone: $e');
+    }
 
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
-
-    flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.requestNotificationsPermission();
-
-    flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.requestExactAlarmsPermission();
 
     const InitializationSettings initializationSettings =
         InitializationSettings(android: initializationSettingsAndroid);
 
     try {
       await flutterLocalNotificationsPlugin.initialize(
-          settings: initializationSettings);
+          settings: initializationSettings,
+          onDidReceiveNotificationResponse: (details) {
+            // Handle notification tap if needed
+          });
+
+      // Request permissions for Android 13+
+      final androidImplementation =
+          flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>();
+      
+      await androidImplementation?.requestNotificationsPermission();
+      await androidImplementation?.requestExactAlarmsPermission();
+
+      // Create Notification Channels (Required for Android 8+)
+      await _createChannels();
+      
     } catch (e) {
-      print('Notification Init Error (safe to ignore on simulator): $e');
+      debugPrint('Notification Init Error: $e');
     }
+  }
+
+  Future<void> _createChannels() async {
+    final androidImplementation =
+        flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
+
+    const taskChannel = AndroidNotificationChannel(
+      'task_reminders',
+      'Task Reminders',
+      description: 'Notifications for upcoming deadline tasks',
+      importance: Importance.high,
+      playSound: true,
+      enableVibration: true,
+    );
+
+    const timetableChannel = AndroidNotificationChannel(
+      'timetable_alerts',
+      'Timetable Alerts',
+      description: 'Notifications for your weekly classes',
+      importance: Importance.high,
+      playSound: true,
+    );
+
+    await androidImplementation?.createNotificationChannel(taskChannel);
+    await androidImplementation?.createNotificationChannel(timetableChannel);
   }
 
   int _generateId(String idString) {
